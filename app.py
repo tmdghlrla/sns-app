@@ -6,7 +6,7 @@ from flask_restful import Api
 from config import Config
 from resources.follow import FollowResource, FolloweePostResource
 from resources.likes import LikeResource
-from resources.posting import FileUploadResource
+from resources.posting import FileDeleteResource, FileResource, FileUpdateResource, FileUploadResource
 from resources.user import UserLoginResource, UserLogoutResource, UserRegisterResource
 
 # 로그아웃 관련된 임포트문
@@ -32,6 +32,9 @@ api.add_resource(UserRegisterResource,'/user/register') # 회원가입
 api.add_resource(UserLoginResource,'/user/login')    # 로그인
 api.add_resource(UserLogoutResource,'/user/logout')   # 로그아웃
 api.add_resource(FileUploadResource,'/posting')     # 포스팅 작성
+api.add_resource(FileDeleteResource,'/posting/<int:postingId>')     # 포스팅 삭제
+api.add_resource(FileResource,'/posting')     # 내 포스팅 가져오기
+api.add_resource(FileUpdateResource,'/posting/<int:postingId>')     # 포스팅 수정
 api.add_resource(FollowResource, '/follow/<int:followeeId>')  # 친구 맺기
 api.add_resource(FolloweePostResource,'/follow/posting')     # 친구 포스팅 가져오기
 api.add_resource(LikeResource, '/like/posting/<int:postingId>')     # 좋아요

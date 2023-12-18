@@ -41,11 +41,15 @@ class FolloweePostResource(Resource) :
 
         try :
             connection = get_connection()
-            query = '''select p.userId, p.imageUrl, p.content, p.createdAt, p.updatedAt
-                        from follow as f
-                        join posting as p
-                        on f.followeeId = p.userId and followerid = %s
-                        order by p.updatedAt desc;'''
+            query = '''select p.id, p.imageUrl, p.content, p.userId, u.email, p.createdAt, count(l.id) as likeCnt, if(l.id is null, 0, 1) as isLike
+                        from posting as p
+                        left join follow as f
+                        on f.followeeId = p.userId
+                        join user as u
+                        on u.id = p.userId
+                        left join likes as l
+                        on l.postingId = p.id and f.followerId = %s
+                        group by p.id;'''
             
             record = (userId, )
 
@@ -57,7 +61,6 @@ class FolloweePostResource(Resource) :
             i = 0
             for row in result_list :
                 result_list[i]['createdAt'] = row['createdAt'].isoformat()
-                result_list[i]['updatedAt'] = row['updatedAt'].isoformat()
                 i = i+1
 
             cursor.close()

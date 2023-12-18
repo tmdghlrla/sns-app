@@ -113,3 +113,139 @@ class FileUploadResource(Resource) :
 
         return label_list, label_confidence_list
     
+class FileDeleteResource(Resource) :
+    @jwt_required()
+    def delete(self, postingId) :
+        userId = get_jwt_identity()
+
+        try :
+            connection = get_connection()
+            query = '''delete from posting
+                    where userId = %s and id = %s;'''
+            
+            record = (userId, postingId)
+
+            cursor = connection.cursor()
+            cursor.execute(query, record)
+
+            connection.commit()
+
+            cursor.close()
+            connection.close()
+
+        except Error as e :
+            print(e)
+            cursor.close()
+            connection.close()
+
+            return {"fail", str(e)}, 500
+        
+        return {"result" : "success"}, 200
+    
+class FileResource(Resource) :
+    @jwt_required()
+    def get(self) :
+        userId = get_jwt_identity()
+
+        try :
+            connection = get_connection()
+            query = '''select *
+                    from posting
+                    where userId = %s
+                    order by createdAt desc;;'''
+            
+            record = (userId,)
+
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(query, record)
+            result_list = cursor.fetchall()
+
+            print(result_list)
+
+            i = 0
+            for row in result_list :
+                result_list[i]['createdAt'] = row['createdAt'].isoformat()
+                result_list[i]['updatedAt'] = row['updatedAt'].isoformat()
+                i = i+1
+
+            print(result_list)
+
+            cursor.close()
+            connection.close()
+
+        except Error as e :
+            print(e)
+            cursor.close()
+            connection.close()
+
+            return {"fail": str(e)}, 500
+        
+        return {"result" : "success",
+                "items" : result_list}, 200
+    
+class FileUpdateResource(Resource) :
+    @jwt_required()
+    def put(self, postingId) :
+        file = request.files.get('photo')
+        content = request.form.get('content')
+        userId = get_jwt_identity()
+
+        if file is None :
+            return {"error" : '파일을 업로드 하세요'}, 400
+        
+        # 파일명을 회사의 파일명 정책에 맞게 변경한다.
+        # 파일명은 유니크 해야 한다.
+        current_time = datetime.now()
+        new_file_name = current_time.isoformat().replace(':', '_') + '.jpg' 
+
+        # 유저가 올린 파일의 이름을 새로운 파일 이름으로 변경한다.
+        file.filename = new_file_name
+
+        # S3에 업로드 하면 된다.
+        # S3에 업로드 하기 위해서는 
+        # AWS에서 제공하는 파이썬 라이브러리인 boto3 라이브러리를 이용해야 한다.
+        # boto3 라이브러리는 AWS의 모든 서비스를 파이썬 코드로 작성할 수 있는 라이브러리다.
+        # pip install boto3 로 설치!
+
+        s3 = boto3.client('s3', 
+                     aws_access_key_id = Config.AWS_ACCESS_KEY_ID,
+                     aws_secret_access_key = Config.AWS_SECRET_ACCESS_KEY)
+        
+
+        try :
+            s3.upload_fileobj(file, 
+                              Config.S3_BUCKET,
+                              file.filename,
+                              ExtraArgs = {'ACL' : 'public-read',
+                                           'ContentType' : 'image/jpeg'})
+        except Exception as e :
+            print(e)
+
+            return {'error' : str(e)}, 500
+        
+        try :
+            connection = get_connection()
+            query = '''update posting
+                    set imageUrl= %s, content= %s
+                    where userId= %s and id = %s;'''
+            
+            imgUrl = Config.S3_LOCATION + file.filename
+            
+            record = (imgUrl, content, userId, postingId)
+
+            cursor = connection.cursor()
+            cursor.execute(query, record)
+
+            connection.commit()
+
+            cursor.close()
+            connection.close()
+
+        except Error as e :
+            print(e)
+            cursor.close()
+            connection.close()
+
+            return {"fail": str(e)}, 500
+        
+        return {"result": "success"}, 200

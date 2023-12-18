@@ -50,7 +50,7 @@ class FileUploadResource(Resource) :
             return {'error' : str(e)}, 500
         
         label_list, label_confidence_list = self.detect_labels(new_file_name, Config.S3_BUCKET)
-        
+
 
         try :
             connection = get_connection()
@@ -67,6 +67,17 @@ class FileUploadResource(Resource) :
             cursor.execute(query, record)
 
             connection.commit()
+
+            postingId = cursor.lastrowid
+
+            for label in label_list :
+                connection = get_connection()
+                query = '''insert into tag_name
+                            set name= %s;'''
+                
+                record = (label,)
+                cursor = connection.cursor()
+###                cursor.execute(query)
 
             cursor.close()
             connection.close()
@@ -92,7 +103,7 @@ class FileUploadResource(Resource) :
                               aws_secret_access_key = Config.AWS_SECRET_ACCESS_KEY)
 
         response = client.detect_labels(Image={'S3Object':{'Bucket':bucket,'Name':photo}},
-        MaxLabels=10,
+        MaxLabels=5,
         # Uncomment to use image properties and filtration settings
         #Features=["GENERAL_LABELS", "IMAGE_PROPERTIES"],
         #Settings={"GeneralLabels": {"LabelInclusionFilters":["Cat"]},
@@ -196,7 +207,7 @@ class FileUpdateResource(Resource) :
         # 파일명을 회사의 파일명 정책에 맞게 변경한다.
         # 파일명은 유니크 해야 한다.
         current_time = datetime.now()
-        new_file_name = current_time.isoformat().replace(':', '_') + '.jpg' 
+        new_file_name = current_time.isoformat().replace(':', '_') + str(userId) +'.jpg'
 
         # 유저가 올린 파일의 이름을 새로운 파일 이름으로 변경한다.
         file.filename = new_file_name

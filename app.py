@@ -4,8 +4,8 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_restful import Api
 from config import Config
-from resources.follow import FollowResource, FolloweePostResource
-from resources.likes import LikeResource
+from resources.follow import FollowResource, FolloweePostDetailResource, FolloweePostResource
+from resources.like import LikeResource
 from resources.posting import FileDeleteResource, FileResource, FileUpdateResource, FileUploadResource
 from resources.user import UserLoginResource, UserLogoutResource, UserRegisterResource
 
@@ -37,6 +37,7 @@ api.add_resource(FileResource,'/posting')     # 내 포스팅 가져오기
 api.add_resource(FileUpdateResource,'/posting/<int:postingId>')     # 포스팅 수정
 api.add_resource(FollowResource, '/follow/<int:followeeId>')  # 친구 맺기, 끊기
 api.add_resource(FolloweePostResource,'/follow/posting')     # 친구 포스팅 가져오기
+api.add_resource(FolloweePostDetailResource,'/follow/posting/<int:postingId>')     # 친구 포스팅 가져오기
 api.add_resource(LikeResource, '/like/posting/<int:postingId>')     # 좋아요
 
 # def handler(event, context) :

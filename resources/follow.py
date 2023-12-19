@@ -34,6 +34,34 @@ class FollowResource(Resource) :
         
         return {"result" : "success"}, 200
     
+    @jwt_required()
+    def delete(self, followeeId) :
+        followerId = get_jwt_identity()
+
+        try :
+            connection = get_connection()
+            query = '''delete from follow
+                    where followerId = %s and followeeId = %s;'''
+            
+            record = (followerId, followeeId)
+
+            cursor = connection.cursor()
+            cursor.execute(query, record)
+
+            connection.commit()
+
+            cursor.close()
+            connection.close()
+
+        except Error as e :
+            print(e)
+            cursor.close()
+            connection.close()
+
+            return {"fail", str(e)}, 500
+        
+        return {"result" : "success"}, 200
+
 class FolloweePostResource(Resource) :
     @jwt_required()
     def get(self) :

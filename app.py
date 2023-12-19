@@ -35,7 +35,7 @@ api.add_resource(FileUploadResource,'/posting')     # 포스팅 작성
 api.add_resource(FileDeleteResource,'/posting/<int:postingId>')     # 포스팅 삭제
 api.add_resource(FileResource,'/posting')     # 내 포스팅 가져오기
 api.add_resource(FileUpdateResource,'/posting/<int:postingId>')     # 포스팅 수정
-api.add_resource(FollowResource, '/follow/<int:followeeId>')  # 친구 맺기
+api.add_resource(FollowResource, '/follow/<int:followeeId>')  # 친구 맺기, 끊기
 api.add_resource(FolloweePostResource,'/follow/posting')     # 친구 포스팅 가져오기
 api.add_resource(LikeResource, '/like/posting/<int:postingId>')     # 좋아요
 

@@ -6,43 +6,20 @@ from mysql.connector import Error
 
 class LikeResource(Resource) :
     @jwt_required()
-    def post(self, postingId) :
+    def post(self, postingId):
+
         userId = get_jwt_identity()
 
         try :
             connection = get_connection()
-            query = '''select *
-                        from `like`
-                        where likerId = %s and postingId = %s;'''
-            
-            record = (userId, postingId)
-
-            cursor = connection.cursor(dictionary=True)
+            query = '''insert into `like`
+                    (likerId, postingId)
+                    values
+                    (%s, %s);'''
+            record = (userId, postingId) 
+            cursor = connection.cursor()
             cursor.execute(query, record)
-
-            result_list = cursor.fetchall()
-
-            if len(result_list) != 0 :
-                query = '''delete from `like`
-                            where likerId = %s and postingId = %s;'''
-                
-                record = (userId, postingId)
-                cursor = connection.cursor()
-                cursor.execute(query, record)
-
-            else :
-                query = '''insert into `like`
-                        (likerId, postingid)
-                        values
-                        (%s, %s);'''
-                
-                record = (userId, postingId)
-
-                cursor = connection.cursor()
-                cursor.execute(query, record)            
-
             connection.commit()
-
             cursor.close()
             connection.close()
 
@@ -50,7 +27,29 @@ class LikeResource(Resource) :
             print(e)
             cursor.close()
             connection.close()
+            return {'error' : str(e)}, 500
 
-            return {"fail" : str(e)}, 500
-        
-        return {"result" : "success"}, 200
+        return {'result' : 'success'}
+    
+    @jwt_required()
+    def delete(self, postingId):
+        userId = get_jwt_identity()
+
+        try :
+            connection = get_connection()
+            query = '''delete from `like` 
+                    where likerId = %s and postingId = %s;'''
+            record = (userId, postingId) 
+            cursor = connection.cursor()
+            cursor.execute(query, record)
+            connection.commit()
+            cursor.close()
+            connection.close()
+
+        except Error as e :
+            print(e)
+            cursor.close()
+            connection.close()
+            return {'error' : str(e)}, 500
+
+        return {'result' : 'success'}

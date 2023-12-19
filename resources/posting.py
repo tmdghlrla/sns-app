@@ -66,21 +66,59 @@ class FileUploadResource(Resource) :
             cursor = connection.cursor()
             cursor.execute(query, record)
 
-            connection.commit()
+            # 2. tag_name 테이블 처리를 해준다.
+            # 리코그니션을 이용해서 받아온 label이 tag_name 테이블에 이미 존재하면 아이디만 가져오고
+            # 그렇지 않으면 테이블에 인서트 한후에 그 아이디를 가져온다.
 
             postingId = cursor.lastrowid
 
-            for label in label_list :
-                connection = get_connection()
-                query = '''insert into tag_name
-                            set name= %s;'''
+            for tag in label_list :
+                tag = tag.lower()
+                query = '''select *
+                            from tag_name
+                            where name = %s;'''
                 
-                record = (label,)
-                cursor = connection.cursor()
-###                cursor.execute(query)
+                record = (tag, )
 
+                cursor = connection.cursor(dictionary=True)
+                cursor.execute(query, record)
+                result_list = cursor.fetchall()
+
+                if len(result_list) != 0 :
+                    tag_name_id = result_list[0]['id']
+
+                else :
+                    query = '''insert into tag_name
+                                (name)
+                                values
+                                (%s);'''
+                    
+                    record = (tag,)
+                    cursor = connection.cursor()
+                    cursor.execute(query, record)
+
+                    tag_name_id = cursor.lastrowid
+
+                    
+                    # 3. 위의 태그네임 아이디와 포스팅 아이디를 이용해서 tag 테이블에 데이터를 넣어준다.
+
+                    # 트랜잭션 처리를 위해서 commit은 테이블 처리를 다 하고나서 마지막에 한번 해준다.
+                    # 이렇게 해주면 중간에 다른 테이블에서 문제가 발생하면 모든 테이블이 롤백(원상복구)된다.
+                    # 이 기능을 트랜잭션이라고 한다.
+                query = '''insert into tag
+                            (postingId, tagNameId)
+                            values
+                            (%s, %s);'''
+                
+                record = (postingId, tag_name_id)
+
+                cursor = connection.cursor()
+                cursor.execute(query, record)
+                
+            connection.commit()
             cursor.close()
             connection.close()
+
         
         except Error as e :
             print(e)
